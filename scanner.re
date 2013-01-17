@@ -72,7 +72,6 @@ public:
             m_limit = newBuffer + restSize;
  
             delete [] m_buffer;
-            m_buffer = newBuffer;
         } else {
             // move remained data to head.
             for (int i=0; i<restSize; ++i) { //memmove( m_buffer, m_token, (restSize)*sizeof(char) );
@@ -119,16 +118,30 @@ std:
 
         INTEGER                = [1-9][0-9]*;
         WS                     = [ \r\n\t\f];
+        ID                     = [a-Z_][a-Z0-9_]*;
+        VAR                    = '$'[a-Z_][a-Z0-9_]*;
+        ARRAY_TAIL             = '['[1-9][0-9]*']';
         ANY_CHARACTER          = [^];
 
         INTEGER {
             yylval.int_value = atoi(this->text().c_str());
             return TOKEN_INT;
         }
+        
+        "=" { return TOKEN_EQ; }
         "+" { return TOKEN_ADD; }
         "-" { return TOKEN_SUB; }
         "*" { return TOKEN_MUL; }
         "/" { return TOKEN_DIV; }
+        "\"" { return TOKEN_DQ; }
+        "'" { return TOKEN_SQ; }
+        "." { return TOKEN_DOT; }
+        "echo" { return TOKEN_ECHO; }
+        "print" { return TOKEN_PRINT; }
+        "/*" { return TOKEN_COMMENT_IN; }
+        "*/" { return TOKEN_COMMENT_OUT; }
+        ID { return TOKEN_ID; }
+        VAR { return TOKEN_VAR; }
         WS {
             goto std;
         }
@@ -138,7 +151,6 @@ std:
         }
 
     */
-
     }
 };
 
