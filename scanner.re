@@ -128,6 +128,22 @@ std:
             return TOKEN_INT;
         }
         
+	"<<" { return TOKEN_SL; }
+	">>" { return TOKEN_SR; }
+	"<=" { return TOKEN_IS_SMALLER_OR_EQUAL; }
+	"<=" { return TOKEN_IS_GREATER_OR_EQUAL; }
+	"<" { return TOKEN_IS_SMALLER; }
+	"<" { return TOKEN_IS_GREATER; }
+        "!==" { return TOKEN_IS_NOT_IDENTICAL; }
+        "===" { return TOKEN_IS_IDENTICAL; }
+	"!=" { return TOKEN_IS_NOT_EQUAL; }
+	"~=" { return TOKEN_IS_EQUAL; }
+        "&" { return TOKEN_AND; }
+        "^" { return TOKEN_HAT; }
+        "|" { return TOKEN_PIPE; }
+        "?" { return TOKEN_QUESTION; }
+        ":" { return TOKEN_COLON; }
+        "," { return TOKEN_COLUMN; }
         "=" { return TOKEN_EQ; }
         "+" { return TOKEN_ADD; }
         "-" { return TOKEN_SUB; }
@@ -136,6 +152,8 @@ std:
         "\"" { return TOKEN_DQ; }
         "'" { return TOKEN_SQ; }
         "." { return TOKEN_DOT; }
+	"%" { return TOKEN_MOD; }
+	"!" { return TOKEN_BANG; }
         "echo" { return TOKEN_ECHO; }
         "print" { return TOKEN_PRINT; }
         "/*" { return TOKEN_COMMENT_IN; }
