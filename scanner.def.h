@@ -3,10 +3,12 @@
 
 typedef union {
     int int_value;
-} YYSTYPE;
+    char *str;
+} TTOKEN;
 
 struct ParserState {
     int result;
+    char *str;
     ParserState() :result(0) {
     }
 };

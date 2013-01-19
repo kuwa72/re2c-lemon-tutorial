@@ -1,9 +1,10 @@
 %token_prefix TOKEN_
 
 %left ADD SUB.
-%left MUL DIV.
+%left DIV MOD.
+%left STR. 
 
-%token_type { YYSTYPE }
+%token_type { TTOKEN } //this is token
 
 %extra_argument { ParserState *state }
 
@@ -26,23 +27,24 @@ program ::= expr(A). {
     state->result = A.int_value;
 }
 
-expr(A) ::= primary_expression(B). {
-    A.int_value = B.int_value;
+program ::= STR(A). {
+    state->str = A.str;
 }
-expr(A) ::= expr(B) SUB primary_expression(C). {
+
+expr(A) ::= expr(B) SUB expr(C). {
     A.int_value = B.int_value - C.int_value;
 }
-expr(A) ::= expr(B) ADD primary_expression(C). {
+expr(A) ::= expr(B) ADD expr(C). {
     A.int_value = B.int_value + C.int_value;
 }
-expr(A) ::= expr(B) DIV primary_expression(C). {
+expr(A) ::= expr(B) DIV expr(C). {
     A.int_value = B.int_value / C.int_value;
 }
-expr(A) ::= expr(B) MUL primary_expression(C). {
+expr(A) ::= expr(B) MUL expr(C). {
     A.int_value = B.int_value * C.int_value;
 }
 
-primary_expression(A) ::= INT(B). {
+expr(A) ::= INT(B). {
     A.int_value = B.int_value;
 }
 

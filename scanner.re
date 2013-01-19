@@ -101,7 +101,7 @@ public:
         return m_lineno;
     }
  
-    int scan(YYSTYPE& yylval) {
+    int scan(TTOKEN& yylval) {
 std:
         m_token = m_cursor;
  
@@ -117,11 +117,24 @@ std:
         re2c:indent:top = 2;
         re2c:indent:string="    ";
 
+        O = [0-7];
+        D = [0-9];
+        L = [a-zA-Z_];
+        H = [a-fA-F0-9];
+        E = [Ee] [+-]? D+;
+        FS = [fFlL];
+        IS = [uUlL]*;
         INTEGER                = [1-9][0-9]*;
         WS                     = [ \r\n\t\f];
-        ANY_CHARACTER          = [^];
+        ANY_CHARACTER     = [\000-\377];
+        ESC     = [\\] ([abfnrtv?'"\\] | "x" H+ | O+);
 
-        INTEGER {
+
+        (["] (ESC|ANY_CHARACTER\[\n\\"])* ["]) {
+	    yylval.str = (char*)this->text().c_str();
+            return TOKEN_STR;
+        }
+	INTEGER {
             yylval.int_value = atoi(this->text().c_str());
             return TOKEN_INT;
         }
