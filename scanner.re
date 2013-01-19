@@ -51,44 +51,39 @@ public:
     }
  
     bool fill(int n) {
- 
-        // is eof?
-        if (ifs->eof()) {
-            if ((m_limit-m_cursor) <= 0) {
-                return false;
+        if (!ifs->eof()) {
+            int restSize = m_limit-m_token;
+            if (restSize+n >= m_buffer_size) {
+                // extend buffer
+                m_buffer_size *= 2;
+                char* newBuffer = new char[m_buffer_size];
+                for (int i=0; i<restSize; ++i) { // memcpy
+                    *(newBuffer+i) = *(m_token+i);
+                }
+                m_cursor = newBuffer + (m_cursor-m_token);
+                m_token = newBuffer;
+                m_limit = newBuffer + restSize;
+     
+                delete [] m_buffer;
+                m_buffer = newBuffer;
+            } else {
+                // move remained data to head.
+                for (int i=0; i<restSize; ++i) { //memmove( m_buffer, m_token, (restSize)*sizeof(char) );
+                    *(m_buffer+i) = *(m_token+i);
+                }
+                m_cursor = m_buffer + (m_cursor-m_token);
+                m_token = m_buffer;
+                m_limit = m_buffer+restSize;
             }
+     
+            // fill to buffer
+            int read_size = m_buffer_size - restSize;
+            ifs->read( m_limit, read_size );
+            m_limit += ifs->gcount();
+     
+            return true;
         }
- 
-        int restSize = m_limit-m_token;
-        if (restSize+n >= m_buffer_size) {
-            // extend buffer
-            m_buffer_size *= 2;
-            char* newBuffer = new char[m_buffer_size];
-            for (int i=0; i<restSize; ++i) { // memcpy
-                *(newBuffer+i) = *(m_token+i);
-            }
-            m_cursor = newBuffer + (m_cursor-m_token);
-            m_token = newBuffer;
-            m_limit = newBuffer + restSize;
- 
-            delete [] m_buffer;
-            m_buffer = newBuffer;
-        } else {
-            // move remained data to head.
-            for (int i=0; i<restSize; ++i) { //memmove( m_buffer, m_token, (restSize)*sizeof(char) );
-                *(m_buffer+i) = *(m_token+i);
-            }
-            m_cursor = m_buffer + (m_cursor-m_token);
-            m_token = m_buffer;
-            m_limit = m_buffer+restSize;
-        }
- 
-        // fill to buffer
-        int read_size = m_buffer_size - restSize;
-        ifs->read( m_limit, read_size );
-        m_limit += ifs->gcount();
- 
-        return true;
+	return false;
     }
  
     std::string text() {
@@ -127,10 +122,15 @@ std:
         INTEGER                = [1-9][0-9]*;
         WS                     = [ \r\n\t\f];
         ANY_CHARACTER     = [\000-\377];
-        ESC     = [\\] ([abfnrtv?'"\\] | "x" H+ | O+);
+	S_ESC	= [\\] (['\\]);
+        ESC     = [\\] ([efnrtv$"\\] | "x" H+ | O+);
 
 
-        (["] (ESC|ANY_CHARACTER\[\n\\"])* ["]) {
+        (['] (S_ESC|ANY_CHARACTER\[\n\\"])*? [']) {
+	    yylval.str = (char*)this->text().c_str();
+            return TOKEN_STR;
+        }
+        (["] (ESC|ANY_CHARACTER\[\n\\"])*? ["]) {
 	    yylval.str = (char*)this->text().c_str();
             return TOKEN_STR;
         }

@@ -10,6 +10,7 @@ struct ParserState {
     int result;
     char *str;
     ParserState() :result(0) {
+        str = '\0';
     }
 };
 
