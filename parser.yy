@@ -11,7 +11,6 @@
 %left DIV MUL.
 %left STR.
 
-
 %syntax_error {
     fprintf(stderr, "Syntax error\n");
 }
@@ -19,10 +18,6 @@
 %parse_failure {
     fprintf(stderr,"Giving up.  Parser is hopelessly lost...\n");
 }
-
-main ::= in.
-in ::= .
-in ::= in program NEWLINE.
 
 program ::= expr(A). {
     state->result = A.int_value;

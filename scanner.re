@@ -13,9 +13,8 @@
 
 class Scanner {
 private:
-    // iostream sucks. very slow.
-    std::istream *ifs;
- 
+    char line[4096];
+    char *l_pos;
     // buffer memory
     char* m_buffer;
     // current position
@@ -23,6 +22,8 @@ private:
     char* m_limit;
     char* m_token;
     char* m_marker;
+    char* m_top;
+    char* m_end;
     int m_buffer_size;
     int m_lineno;
  
@@ -32,7 +33,7 @@ public:
         m_lineno++;
     }
 
-    Scanner( std::istream *ifs_, int init_size=1024 )
+    Scanner( std::string s, int init_size=1024 )
         : m_buffer(0)
         , m_cursor(0)
         , m_limit(0)
@@ -40,10 +41,14 @@ public:
         , m_marker(0)
         , m_buffer_size(init_size)
         , m_lineno(1)
+        , m_top(0)
+        , m_end(0)
     {
         m_buffer = new char[m_buffer_size];
         m_cursor = m_limit = m_token = m_marker = m_buffer;
-        ifs = ifs_;
+        strcpy(m_buffer, s.c_str());
+        strcpy(line, s.c_str());
+        l_pos = line;
     }
  
     ~Scanner() {
@@ -51,36 +56,37 @@ public:
     }
  
     bool fill(int n) {
-        if (!ifs->eof()) {
-            int restSize = m_limit-m_token;
-            if (restSize+n >= m_buffer_size) {
-                // extend buffer
-                m_buffer_size *= 2;
-                char* newBuffer = new char[m_buffer_size];
-                for (int i=0; i<restSize; ++i) { // memcpy
-                    *(newBuffer+i) = *(m_token+i);
-                }
-                m_cursor = newBuffer + (m_cursor-m_token);
-                m_token = newBuffer;
-                m_limit = newBuffer + restSize;
-     
-                delete [] m_buffer;
-                m_buffer = newBuffer;
-            } else {
-                // move remained data to head.
-                for (int i=0; i<restSize; ++i) { //memmove( m_buffer, m_token, (restSize)*sizeof(char) );
-                    *(m_buffer+i) = *(m_token+i);
-                }
-                m_cursor = m_buffer + (m_cursor-m_token);
+        if (!m_end){
+            int cnt = m_token-m_buffer;
+            if (cnt) {
+                memmove(m_buffer, m_token, m_limit - m_token);
                 m_token = m_buffer;
-                m_limit = m_buffer+restSize;
+                m_marker -= cnt;
+                m_cursor -= cnt;
+                m_limit  -= cnt;
             }
-     
-            // fill to buffer
-            int read_size = m_buffer_size - restSize;
-            ifs->read( m_limit, read_size );
-            m_limit += ifs->gcount();
-     
+            if((m_top - m_limit) < m_buffer_size){
+                char *buf = (char*) malloc(((m_limit - m_buffer) + m_buffer_size)*sizeof(char));
+                memmove(buf, m_token, m_limit - m_token);
+                m_token = buf;
+                m_marker = &buf[m_marker - m_buffer];
+                m_cursor = &buf[m_cursor - m_buffer];
+                m_limit = &buf[m_limit - m_buffer];
+                m_top = &m_limit[m_buffer_size];
+                free(m_buffer);
+                m_buffer = buf;
+            }
+
+            
+            cnt = strlen(l_pos)+1;
+            memmove(m_limit, l_pos, cnt);
+            l_pos += cnt;
+            if(cnt != m_buffer_size){
+                m_end = &m_limit[cnt];
+                *(m_end)++ = '\n';
+            }
+            m_limit += cnt;
+
             return true;
         }
 	return false;
@@ -96,7 +102,7 @@ public:
         return m_lineno;
     }
  
-    int scan(TTOKEN& yylval) {
+    int scan(TTOKEN* tok) {
 std:
         m_token = m_cursor;
  
@@ -108,7 +114,6 @@ std:
         re2c:define:YYFILL:naked = 1;
         re2c:define:YYFILL@len = #;
         re2c:define:YYFILL = "if (!fill(#)) { return 0; }";
-        re2c:yyfill:enable = 1;
         re2c:indent:top = 2;
         re2c:indent:string="    ";
 
@@ -127,15 +132,15 @@ std:
 
 
         (['] (S_ESC|ANY_CHARACTER\[\n\\"])*? [']) {
-	    yylval.str = (char*)this->text().c_str();
+	    tok->str = (char*)this->text().c_str();
             return TOKEN_STR;
         }
         (["] (ESC|ANY_CHARACTER\[\n\\"])*? ["]) {
-	    yylval.str = (char*)this->text().c_str();
+	    tok->str = (char*)this->text().c_str();
             return TOKEN_STR;
         }
 	INTEGER {
-            yylval.int_value = atoi(this->text().c_str());
+            tok->int_value = atoi(this->text().c_str());
             return TOKEN_INT;
         }
         "+" { return TOKEN_ADD; }
